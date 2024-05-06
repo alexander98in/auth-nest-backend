@@ -7,6 +7,10 @@ import { Model } from 'mongoose';
 
 import * as bcryptjs from 'bcryptjs';
 import { LoginDto } from './dto/login.dto';
+import { JwtService } from '@nestjs/jwt';
+import { JwtPayload } from './interfaces/jwt-payload';
+import { RegisterUserDto } from './dto';
+import { LoginResponse } from './interfaces/login-response';
 
 @Injectable()
 export class AuthService {
@@ -14,10 +18,10 @@ export class AuthService {
   constructor(
     @InjectModel( User.name )
     private userModel: Model<User>,
+    private jwtService: JwtService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    console.log(createUserDto);
     
     try {
 
@@ -44,7 +48,16 @@ export class AuthService {
     
   }
 
-  async login(loginDto: LoginDto): Promise<> {
+  async register( registerDto: RegisterUserDto ): Promise<LoginResponse> {
+    const user = await this.create(registerDto);
+
+    return {
+      user: user, 
+      token: this.getJwtToken({ id: user._id })
+    }
+  }
+
+  async login(loginDto: LoginDto): Promise<LoginResponse> {
     const { email, password } = loginDto;
 
     const user = await this.userModel.findOne({email});
@@ -54,6 +67,13 @@ export class AuthService {
 
     if(!bcryptjs.compareSync(password, user.password)) {
       throw new UnauthorizedException('Not valid credentials - password')
+    }
+
+    const { password:_, ...rest  } = user.toJSON();
+      
+    return {
+      user: rest,
+      token: this.getJwtToken({ id: user.id }),
     }
   }
 
@@ -71,5 +91,10 @@ export class AuthService {
 
   remove(id: number) {
     return `This action removes a #${id} auth`;
+  }
+
+  getJwtToken( payload: JwtPayload ) {
+    const token = this.jwtService.sign(payload);
+    return token;
   }
 }
