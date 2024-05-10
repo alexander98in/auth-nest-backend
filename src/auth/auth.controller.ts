@@ -4,6 +4,7 @@ import { CreateUserDto, LoginDto, RegisterUserDto, UpdateAuthDto } from './dto';
 import { AuthGuard } from './guards/auth.guard';
 import { LoginResponse } from './interfaces/login-response';
 import { User } from './entities/user.entity';
+import { UserResponse } from './interfaces/user-response';
 
 @Controller('auth')
 export class AuthController {
@@ -18,6 +19,11 @@ export class AuthController {
   @Post('/login')
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Post('/loginv2')
+  loginv2(@Body() loginDto: LoginDto) {
+    return this.authService.loginv2(loginDto);
   }
 
   @Post('/register')
@@ -41,6 +47,16 @@ export class AuthController {
     return {
       user,
       token: this.authService.getJwtToken({id: user._id})
+    };
+  }
+
+
+  @Get('user')
+  @UseGuards(AuthGuard)
+  getUser(@Request() req: Request): UserResponse {
+    const user = req['user'] as User;
+    return {
+      ...user
     };
   }
 

@@ -11,6 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from './interfaces/jwt-payload';
 import { RegisterUserDto } from './dto';
 import { LoginResponse } from './interfaces/login-response';
+import { LoginResponseV2 } from './interfaces/login-responsev2';
 
 @Injectable()
 export class AuthService {
@@ -73,6 +74,23 @@ export class AuthService {
       
     return {
       user: rest,
+      token: this.getJwtToken({ id: user.id }),
+    }
+  }
+
+  async loginv2(loginDto: LoginDto): Promise<LoginResponseV2> {
+    const { email, password } = loginDto;
+
+    const user = await this.userModel.findOne({email});
+    if(!user) {
+      throw new UnauthorizedException('Not valid credentials - email');
+    }
+
+    if(!bcryptjs.compareSync(password, user.password)) {
+      throw new UnauthorizedException('Not valid credentials - password')
+    }
+
+    return {
       token: this.getJwtToken({ id: user.id }),
     }
   }
